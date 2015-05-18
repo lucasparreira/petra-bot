@@ -1,12 +1,9 @@
-from celery import Celery
-from downloader_engine.local_scheduler import Scheduler
+import urllib2
 
-app = Celery('downloader', broker='amqp://guest@localhost//')
+def perform_job(scheduler):
+    next_page = scheduler.get_next()
 
-
-@app.task(name='downloader')
-def go(seed_list=[]):
-    print ('go')
-
-    scheduler = Scheduler(seed_list)
-    scheduler.start()
+    if next_page:
+        response = urllib2.urlopen(next_page)
+        document = response.read()
+        print document

@@ -3,7 +3,7 @@ from Queue import PriorityQueue
 import time
 from threading import Thread
 from downloader import perform_job
-from helpers import parse_domain
+from helpers import parse_domain, get_current_time_stamp
 
 
 class EnumSchedulerStatus(object):
@@ -17,10 +17,8 @@ class Scheduler(object):
     request_waiting_time = 1
     # threads disponiveis
     number_of_threads = 4
-
-    @staticmethod
-    def get_current_time_stamp():
-        return int(time.time())
+    #caminho para salvar na maquina local
+    save_path = '/home/lucas/Crawling/'
 
     def __init__(self, urls):
 
@@ -30,10 +28,12 @@ class Scheduler(object):
         self._pages_queue = PriorityQueue()
         # dados do contexto de ecução
         self._context = {'status': EnumSchedulerStatus.stopped, 'threads': []}
+        #mantem lista de já processados
+        self.already_visited = {}
 
         # faz setup dos primeiros downloads
         for url in urls:
-            domain_last_access = self.get_current_time_stamp() - 1
+            domain_last_access = get_current_time_stamp() - 1
             self._domains_access[parse_domain(url)] = domain_last_access
             self._pages_queue.put((domain_last_access, url))
 
@@ -41,7 +41,7 @@ class Scheduler(object):
         domain = parse_domain(url)
 
         # busca ultimo tempo do dominio em questão
-        domain_last_access = self.get_current_time_stamp() - 1
+        domain_last_access = get_current_time_stamp() - 1
         if domain in self._domains_access:
             domain_last_access = self._domains_access[domain]
         else:
@@ -69,7 +69,7 @@ class Scheduler(object):
 
         if next_page:
             next_domain = parse_domain(next_page[1])
-            while (self.get_current_time_stamp() - self._domains_access[next_domain] < self.request_waiting_time):
+            while (get_current_time_stamp() - self._domains_access[next_domain] < self.request_waiting_time):
                 time.sleep(0.1)
 
             return next_page[1]
@@ -77,4 +77,4 @@ class Scheduler(object):
         return None
 
     def update_domain(self, url):
-        self._domains_access[parse_domain(url)] = self.get_current_time_stamp()
+        self._domains_access[parse_domain(url)] = get_current_time_stamp()

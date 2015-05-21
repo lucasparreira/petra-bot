@@ -18,4 +18,5 @@ class Scheduler(object):
     def scale_and_run_spiders(self, params):
         print ('scale_and_run_spiders')
         from downloader_engine.tasks import go
-        go.delay([])
+        go([])
+        #go.delay([])

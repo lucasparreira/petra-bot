@@ -14,6 +14,8 @@ def perform_job(scheduler):
         else:
             scheduler.already_visited[next_page] = 1
 
+            print next_page
+
             try:
 
                 req = urllib2.Request(next_page, headers={'User-Agent' : "petra-bot"})
@@ -40,7 +42,7 @@ def perform_job(scheduler):
                         scheduler.enqueue(link)
                 else:
                     response.close()
-            except:
-                pass
+            except Exception as e:
+                print e
 
         next_page = scheduler.get_next()

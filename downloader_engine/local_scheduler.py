@@ -4,6 +4,7 @@ import time
 from threading import Thread
 from downloader import perform_job
 from helpers import parse_domain, get_current_time_stamp
+import copy
 
 
 class EnumSchedulerStatus(object):
@@ -15,44 +16,35 @@ class Scheduler(object):
 
     # tempo em segundos para fazer requisições
     request_waiting_time = 1
-    # threads disponiveis
-    number_of_threads = 1
-    #caminho para salvar na maquina local
+    # maximo de threads
+    max_number_of_threads = 16
+    # caminho para salvar na maquina local
     save_path = '/home/lucas/Crawling/'
 
     def __init__(self, urls):
-
-        # mantem ultimo acesso (timestamp) de cada dominio
-        self._domains_access = dict()
-        # organiza paginas para baixar em uma fila de prioridades
-        self._pages_queue = PriorityQueue()
-        # dados do contexto de ecução
+        # mantem fila de prioridades de cada dominio
+        self.domains_queue = PriorityQueue()
+        # mantem paginas a baixar dos dominios
+        self.domain_pages = dict()
+        # dados do contexto de execução
         self._context = {'status': EnumSchedulerStatus.stopped, 'threads': []}
-        #mantem lista de já processados
-        self.already_visited = {}
+        # mantem lista de já processados
+        self.already_visited = dict()
+
+        domain_last_access = get_current_time_stamp() - 1
 
         # faz setup dos primeiros downloads
         for url in urls:
-            domain_last_access = get_current_time_stamp() - 1
-            self._domains_access[parse_domain(url)] = domain_last_access
-            self._pages_queue.put((domain_last_access, url))
+            current_domain = parse_domain(url)
+            self.domains_queue.put([domain_last_access, current_domain])
+            self.domain_pages[current_domain] = [url]
+
+        self.number_of_threads = min(self.max_number_of_threads, len(self.domain_pages.keys()))
+        self.number_of_threads = 1
 
     def enqueue(self, url):
         domain = parse_domain(url)
-
-        # busca ultimo tempo do dominio em questão
-        domain_last_access = get_current_time_stamp() - 1
-        if domain in self._domains_access:
-            domain_last_access = self._domains_access[domain]
-        else:
-            self._domains_access[domain] = domain_last_access
-
-        for t_page in self._pages_queue.queue:
-            if domain == parse_domain(t_page[1]):
-                t_page[0] = domain_last_access
-
-        self._pages_queue.put((domain_last_access, url))
-
+        self.domain_pages[domain].append(url)
 
     def start(self):
 
@@ -68,21 +60,27 @@ class Scheduler(object):
             current_thread.start()
 
     def get_next(self):
+        # lista ordenada de dominios (por prioridade)
+        domains = sorted(copy.deepcopy(self.domains_queue.queue), key=lambda t: t[0])
+        next_page = None
+        current_domain_tuple = None
+        for domain_tuple in domains:
+            try:
+                next_page = self.domain_pages[domain_tuple[1]].pop()
+                current_domain_tuple = domain_tuple
+                break
+            except IndexError:
+                pass
 
-        print self._pages_queue.queue
+        if current_domain_tuple:
+            while get_current_time_stamp() - current_domain_tuple[0] < self.request_waiting_time:
+                time.sleep(0.1)
 
-        try:
-            # obtem proxima pagina para baixar
-            next_page = self._pages_queue.get()
-
-            next_domain = parse_domain(next_page[1])
-            while (get_current_time_stamp() - self._domains_access[next_domain] < self.request_waiting_time):
-                time.sleep(0.01)
-
-            print "%s    -    %s" % (str(get_current_time_stamp()), next_domain)
-            return next_page[1]
-        except Empty:
-            return None
+        return next_page
 
     def update_domain(self, url):
-        self._domains_access[parse_domain(url)] = get_current_time_stamp()
+        domain = parse_domain(url)
+        for domain_tuple in self.domains_queue.queue:
+            if domain_tuple[1] == domain:
+                domain_tuple[0] = get_current_time_stamp()
+                break

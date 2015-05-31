@@ -75,6 +75,7 @@ class Scheduler(object):
         if current_domain_tuple:
             while get_current_time_stamp() - current_domain_tuple[0] < self.request_waiting_time:
                 time.sleep(0.1)
+            print get_current_time_stamp()
 
         return next_page
 

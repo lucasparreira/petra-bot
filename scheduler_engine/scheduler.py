@@ -1,13 +1,14 @@
 import time
 import json
 
+
 class Scheduler(object):
 
     def start(self):
 
         params = self.get_parameters()
 
-        while (True):
+        while True:
             self.scale_and_run_spiders(params)
             time.sleep(params['run_every'] * 60)
 

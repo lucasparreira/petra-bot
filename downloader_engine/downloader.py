@@ -18,7 +18,7 @@ def perform_job(scheduler):
 
             try:
 
-                req = urllib2.Request(next_page, headers={'User-Agent' : "petra-bot"})
+                req = urllib2.Request(next_page, headers={'User-Agent': "petra-bot"})
                 response = urllib2.urlopen(req)
 
                 scheduler.update_domain(next_page)

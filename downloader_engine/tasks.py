@@ -10,7 +10,7 @@ app.conf.CELERY_ALWAYS_EAGER = True
 def go(seed_list):
     from local_scheduler import Scheduler
 
-    seed_list = ['http://www.americanas.com.br', 'http://www.ricardoeletro.com.br', 'http://www.pucminas.br', 'http://www.extra.com.br']
+    seed_list = ['http://www.extra.com.br', 'http://www.americanas.com.br']#'http://www.americanas.com.br', 'http://www.extra.com.br', 'http://www.pucminas.br']#, 'http://www.extra.com.br']
 
     scheduler = Scheduler(seed_list)
     scheduler.start()

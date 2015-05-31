@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-from Queue import PriorityQueue
+from Queue import PriorityQueue, Empty
 import time
 from threading import Thread
 from downloader import perform_job
@@ -16,7 +16,7 @@ class Scheduler(object):
     # tempo em segundos para fazer requisições
     request_waiting_time = 1
     # threads disponiveis
-    number_of_threads = 4
+    number_of_threads = 1
     #caminho para salvar na maquina local
     save_path = '/home/lucas/Crawling/'
 
@@ -45,9 +45,14 @@ class Scheduler(object):
         if domain in self._domains_access:
             domain_last_access = self._domains_access[domain]
         else:
-            self._domains_access[parse_domain(url)] = domain_last_access
+            self._domains_access[domain] = domain_last_access
+
+        for t_page in self._pages_queue.queue:
+            if domain == parse_domain(t_page[1]):
+                t_page[0] = domain_last_access
 
         self._pages_queue.put((domain_last_access, url))
+
 
     def start(self):
 
@@ -64,17 +69,20 @@ class Scheduler(object):
 
     def get_next(self):
 
-        # obtem proxima pagina para baixar
-        next_page = self._pages_queue.get()
+        print self._pages_queue.queue
 
-        if next_page:
+        try:
+            # obtem proxima pagina para baixar
+            next_page = self._pages_queue.get()
+
             next_domain = parse_domain(next_page[1])
             while (get_current_time_stamp() - self._domains_access[next_domain] < self.request_waiting_time):
-                time.sleep(0.1)
+                time.sleep(0.01)
 
+            print "%s    -    %s" % (str(get_current_time_stamp()), next_domain)
             return next_page[1]
-
-        return None
+        except Empty:
+            return None
 
     def update_domain(self, url):
         self._domains_access[parse_domain(url)] = get_current_time_stamp()

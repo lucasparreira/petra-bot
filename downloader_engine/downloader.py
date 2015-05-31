@@ -8,7 +8,6 @@ def perform_job(scheduler):
     next_page = scheduler.get_next()
 
     while next_page:
-        print "pagina------- " + next_page
 
         if next_page in scheduler.already_visited:
             scheduler.already_visited[next_page] += 1
@@ -33,7 +32,6 @@ def perform_job(scheduler):
 
                     with open('%s/%s.html' %(domain_dir, guid_time()), 'w') as the_file:
                         the_file.write(document)
-
 
                     # extrai novas páginas para baixar
                     links = parse_links(document, parse_address(next_page), restricted_domain=domain)

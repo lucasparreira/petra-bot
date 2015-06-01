@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 import urllib2
-from downloader_engine.helpers import parse_domain, parse_links, parse_address, guid_time
+from helpers import parse_domain, parse_links, parse_address, guid_time
 import os
 
 

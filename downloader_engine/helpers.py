@@ -5,6 +5,7 @@ import time
 import tldextract
 import uuid
 
+
 def parse_domain(uri):
     try:
         result = tldextract.extract(uri)
@@ -40,3 +41,24 @@ def guid_time():
 
 def get_current_time_stamp():
         return int(time.time())
+
+
+class VisitCache(object):
+
+    """
+    Implementa um cache de visitas já feitas.
+    Utiliza dicionário para controlar.
+    Caso aumente o número de URLs, substituir por BloomFilter.
+    """
+
+    def __init__(self):
+        self._already_visited = dict()
+
+    def add(self, url):
+        if url not in self._already_visited:
+            self._already_visited[url] = 1
+        else:
+            self._already_visited[url] += 1
+
+    def already_visited(self, url):
+        return url in self._already_visited

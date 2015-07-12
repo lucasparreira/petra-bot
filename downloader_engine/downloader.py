@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 import urllib2
-from helpers import parse_domain, parse_links, parse_address, guid_time
+from helpers import parse_domain, parse_links, parse_address, guid_time, get_current_time_stamp, parse_host
 import os
 
 
@@ -11,30 +11,59 @@ def perform_job(scheduler):
         print next_page
 
         try:
+            try:
+                if get_current_time_stamp() % 600 == 0:
+                    print scheduler.stats
+            except:
+                pass
 
-            req = urllib2.Request(next_page, headers={'User-Agent': "petra-bot"})
-            response = urllib2.urlopen(req)
+            next_page_resolved = scheduler.replace_host_addr(next_page)
+            if next_page_resolved:
 
-            if response.headers.type.lower() == 'text/html':
+                req = urllib2.Request(next_page_resolved, headers={'User-Agent': "petra-bot",
+                                                                   'Host': parse_host(next_page)})
+                response = urllib2.urlopen(req)
 
-                document = response.read()
-                domain = parse_domain(next_page)
-                domain_dir = '%s%s' % (scheduler.save_path, domain)
+                if response.headers.type.lower() == 'text/html':
 
-                if not os.path.exists(domain_dir):
-                    os.makedirs(domain_dir)
+                    scheduler.add_code(next_page, response.code)
 
-                with open('%s/%s.html' % (domain_dir, guid_time()), 'w') as the_file:
-                    the_file.write(document)
+                    document = response.read()
+                    domain = parse_domain(next_page)
+                    domain_dir = '%s%s' % (scheduler.save_path, domain)
 
-                # extrai novas páginas para baixar
-                links = parse_links(document, parse_address(next_page), restricted_domain=domain)
+                    if not os.path.exists(domain_dir):
+                        os.makedirs(domain_dir)
 
-                for link in links:
-                    scheduler.enqueue(link)
-            else:
-                response.close()
+                    if scheduler.domain_plugins[domain](document):
+                        with open('%s/%s.html' % (domain_dir, guid_time()), 'w') as the_file:
+                            the_file.write(document)
+                        scheduler.stats[domain]['collected'] += 1
+                    else:
+                        scheduler.stats[domain]['discard'] += 1
+
+                    # extrai novas páginas para baixar
+                    links = parse_links(document, parse_address(next_page), restricted_domain=domain)
+
+                    for link in links:
+                        scheduler.enqueue(link)
+                else:
+                    response.close()
         except Exception as e:
+
+            try:
+                if '302' in str(e):
+                    scheduler.add_code(next_page, 302)
+                elif '400' in str(e):
+                    scheduler.add_code(next_page, 400)
+            except:
+                pass
+
+            if next_page_resolved:
+                print next_page_resolved
             print e
 
         next_page = scheduler.get_next()
+
+    print ('!@#$ FIM - %s' % str(get_current_time_stamp()))
+    print scheduler.stats

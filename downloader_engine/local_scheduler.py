@@ -2,7 +2,10 @@
 import time
 from threading import Thread, Lock
 from downloader import perform_job
-from helpers import parse_domain, get_current_time_stamp, VisitCache
+from downloader_engine.plugins import validate_americanas, validate_extra, validate_saraiva
+from helpers import parse_domain, get_current_time_stamp, VisitCache, parse_host, parse_address
+import socket
+import robotexclusionrulesparser
 
 
 class EnumSchedulerStatus(object):
@@ -29,7 +32,16 @@ class Scheduler(object):
         # dados do contexto de execução
         self._context = {'status': EnumSchedulerStatus.stopped, 'threads': []}
         # mantem lista de já processados
-        self.visit_cache = VisitCache()
+        self._visit_cache = VisitCache()
+
+        self.domain_plugins = {'americanas.com.br': validate_americanas,
+                               'extra.com.br': validate_extra,
+                               'saraiva.com.br': validate_saraiva}
+
+        self._dns_cache = {}
+        self._robot_cache = {}
+
+        self.stats = dict()
 
         domain_last_access = get_current_time_stamp() - self.request_waiting_time
 
@@ -38,17 +50,62 @@ class Scheduler(object):
             current_domain = parse_domain(url)
             self.domains_queue.append([domain_last_access, current_domain])
             self.domain_pages[current_domain] = [url]
+            self.stats[current_domain] = {'collected': 0, 'discard': 0,
+                                          'start': get_current_time_stamp(), 'discard_robots': 0,
+                                          'codes': {}}
 
         self.number_of_threads = min(self.max_number_of_threads, len(self.domain_pages.keys()))
-        self.number_of_threads = 1
+        # self.number_of_threads = 1
+
+    def add_code(self, page, code):
+        with self.lock_obj:
+            try:
+                domain = parse_domain(page)
+                if code in self.stats[domain]['codes']:
+                    self.stats[domain]['codes'][code] += 1
+                else:
+                    self.stats[domain]['codes'][code] = 1
+            except Exception as e:
+                print e
+                pass
 
     def enqueue(self, url):
         with self.lock_obj:
-            if not self.visit_cache.already_visited(url):
-                domain = parse_domain(url)
-                self.domain_pages[domain].append(url)
 
-            self.visit_cache.add(url)
+            if url:
+                url_lower = url.lower()
+                if 'busca.americanas.com.br' in url_lower or 'checkout.saraiva.com' in url_lower or \
+                                'busca.extra.com.br' in url_lower:
+                    return
+
+            if not self._visit_cache.already_visited(url):
+
+                addr = parse_address(url)
+                domain = parse_domain(url)
+                if addr not in self._robot_cache:
+                    robot_parser = robotexclusionrulesparser.RobotExclusionRulesParser()
+                    robot_parser.user_agent = 'petra-bot'
+                    robot_parser.fetch(addr + "/robots.txt")
+                    self._robot_cache[addr] = robot_parser
+
+                if self._robot_cache[addr].is_allowed("petra-bot", url):
+                    self.domain_pages[domain].append(url)
+                else:
+                    self.stats[domain]['discard_robots'] += 1
+
+            self._visit_cache.add(url)
+
+    def replace_host_addr(self, full_url):
+
+        with self.lock_obj:
+            try:
+                full_domain = parse_host(full_url)
+                if full_domain not in self._dns_cache:
+                    self._dns_cache[full_domain] = socket.gethostbyname(full_domain)
+
+                return full_url.replace(full_domain, self._dns_cache[full_domain])
+            except:
+                return None
 
     def start(self):
 
@@ -86,7 +143,7 @@ class Scheduler(object):
                     current_time = get_current_time_stamp()
 
                 self._update_domain(next_page, current_time)
-                self.visit_cache.add(next_page)
+                self._visit_cache.add(next_page)
 
             return next_page
 

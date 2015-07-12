@@ -9,14 +9,26 @@ import uuid
 def parse_domain(uri):
     try:
         result = tldextract.extract(uri)
-        return '%s.%s' % (result.domain, result.suffix)
+        return ('%s.%s' % (result.domain, result.suffix)).lower()
     except:
         raise
 
 
 def parse_address(uri):
     result = tldextract.extract(uri)
-    return 'http://%s.%s.%s' % (result.subdomain, result.domain, result.suffix)
+    addr = 'http://'
+    if result.subdomain:
+        addr += result.subdomain + '.'
+    addr += result.domain
+    if result.suffix:
+        addr += '.' + result.suffix
+
+    return addr.lower()
+
+
+def parse_host(uri):
+    result = tldextract.extract(uri)
+    return ('%s.%s.%s' % (result.subdomain, result.domain, result.suffix)).lower()
 
 
 def parse_links(html, origin_domain, restricted_domain=None):

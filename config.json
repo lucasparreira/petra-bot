@@ -1,5 +1,5 @@
 {
-  "run_every": 30,
+  "run_every": 8400,
   "domains": [],
   "spiders": []
 }

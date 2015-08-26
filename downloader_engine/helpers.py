@@ -1,5 +1,4 @@
 # -*- coding: UTF-8 -*-
-
 from bs4 import BeautifulSoup
 import time
 import tldextract
@@ -37,7 +36,8 @@ def parse_links(html, origin_domain, restricted_domain=None):
     for link in soup.findAll("a"):
         href = link.get("href")
 
-        if href and href[0].strip() != u'#' and (not restricted_domain or parse_domain(href).lower() == restricted_domain.lower()):
+        if href and href[0].strip() != u'#' and \
+                (not restricted_domain or parse_domain(href).lower() == restricted_domain.lower()):
 
             if href[0] == u'/':
                 links.append(origin_domain + href)
@@ -58,9 +58,9 @@ def get_current_time_stamp():
 class VisitCache(object):
 
     """
-    Implementa um cache de visitas já feitas.
-    Utiliza dicionário para controlar.
-    Caso aumente o número de URLs, substituir por BloomFilter.
+    Implements a visiting cache through a dictionary.
+    It should be replaced by other solution in case of bigger number of urls.
+    e.g. Bloom Filter
     """
 
     def __init__(self):

@@ -1,5 +1,4 @@
 import time
-import json
 
 
 class Scheduler(object):
@@ -15,11 +14,13 @@ class Scheduler(object):
 
         time.sleep(999999999999)
 
-    def get_parameters(self):
+    @staticmethod
+    def get_parameters():
         import settings
         return settings
 
-    def scale_and_run_spiders(self, params):
+    @staticmethod
+    def scale_and_run_spiders(params):
         print ('scale_and_run_spiders')
         from downloader_engine.tasks import go
         go.delay([])

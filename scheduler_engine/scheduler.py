@@ -2,10 +2,13 @@ import time
 
 
 class Scheduler(object):
+    """
+
+    """
 
     def start(self):
 
-        params = self.get_parameters()
+        import settings as params
 
         self.scale_and_run_spiders(params)
         # while True:
@@ -13,11 +16,6 @@ class Scheduler(object):
         #     time.sleep(param.run_every * 60)
 
         time.sleep(999999999999)
-
-    @staticmethod
-    def get_parameters():
-        import settings
-        return settings
 
     @staticmethod
     def scale_and_run_spiders(params):

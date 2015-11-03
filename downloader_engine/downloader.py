@@ -1,16 +1,26 @@
 # -*- coding: UTF-8 -*-
 import urllib2
-from helpers import parse_domain, parse_links, parse_address, guid_time, get_current_time_stamp, parse_host
+from helpers import parse_domain, parse_links, parse_address, guid_time, get_current_time_stamp, parse_host, \
+    user_agent_name
 import os
 
 
-def perform_job(scheduler):
+def download_pages(scheduler):
+
+    """
+
+    :param scheduler:
+    :return:
+    """
+
     next_page = scheduler.get_next()
 
     while next_page:
         print next_page
 
         try:
+
+            # DEBUG purposes
             try:
                 if get_current_time_stamp() % 600 == 0:
                     print scheduler.stats
@@ -20,7 +30,7 @@ def perform_job(scheduler):
             next_page_resolved = scheduler.replace_host_addr(next_page)
             if next_page_resolved:
 
-                req = urllib2.Request(next_page_resolved, headers={'User-Agent': "petra-bot",
+                req = urllib2.Request(next_page_resolved, headers={'User-Agent': user_agent_name,
                                                                    'Host': parse_host(next_page)})
                 response = urllib2.urlopen(req)
 
@@ -42,9 +52,8 @@ def perform_job(scheduler):
                     else:
                         scheduler.stats[domain]['discard'] += 1
 
-                    # extrai novas páginas para baixar
+                    # extract new links
                     links = parse_links(document, parse_address(next_page), restricted_domain=domain)
-
                     for link in links:
                         scheduler.enqueue(link)
                 else:
@@ -65,5 +74,5 @@ def perform_job(scheduler):
 
         next_page = scheduler.get_next()
 
-    print ('!@#$ FIM - %s' % str(get_current_time_stamp()))
+    print ('!@#$ END - %s' % str(get_current_time_stamp()))
     print scheduler.stats

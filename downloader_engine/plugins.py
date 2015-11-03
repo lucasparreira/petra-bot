@@ -9,7 +9,7 @@ def validate_americanas(page_str):
         product_nodes = tree.xpath("//div[@class='productInfo']")
 
         return len(product_nodes) > 0
-    except Exception as e:
+    except:
         return False
 
 
@@ -20,7 +20,7 @@ def validate_extra(page_str):
         product_nodes = tree.xpath("//div[@class='hproduct']")
 
         return len(product_nodes) > 0
-    except Exception as e:
+    except:
         return False
 
 
@@ -31,5 +31,5 @@ def validate_saraiva(page_str):
         product_nodes = tree.xpath("//div[@class='priceStructure']")
 
         return len(product_nodes) > 0
-    except Exception as e:
+    except:
         return False

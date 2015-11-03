@@ -5,7 +5,14 @@ import tldextract
 import uuid
 
 
+user_agent_name = 'petra-bot'
+
+
 def parse_domain(uri):
+    """
+    Parse only master domain, e.g nytimes.com.
+    """
+
     try:
         result = tldextract.extract(uri)
         return ('%s.%s' % (result.domain, result.suffix)).lower()
@@ -14,6 +21,10 @@ def parse_domain(uri):
 
 
 def parse_address(uri):
+    """
+    Parse full address, e.g http://www.nytimes.com.
+    """
+
     result = tldextract.extract(uri)
     addr = 'http://'
     if result.subdomain:
@@ -26,11 +37,19 @@ def parse_address(uri):
 
 
 def parse_host(uri):
+    """
+    Parse address without web protocol, e.g www.nytimes.com.
+    """
+
     result = tldextract.extract(uri)
     return ('%s.%s.%s' % (result.subdomain, result.domain, result.suffix)).lower()
 
 
 def parse_links(html, origin_domain, restricted_domain=None):
+    """
+    Parse absolute links according to the restrictions.
+    """
+
     soup = BeautifulSoup(html)
     links = []
     for link in soup.findAll("a"):
@@ -48,29 +67,15 @@ def parse_links(html, origin_domain, restricted_domain=None):
 
 
 def guid_time():
+    """
+    Return a time-based-seed guid.
+    """
+
     return str(uuid.uuid1())
 
 
 def get_current_time_stamp():
-        return int(time.time())
-
-
-class VisitCache(object):
-
     """
-    Implements a visiting cache through a dictionary.
-    It should be replaced by other solution in case of bigger number of urls.
-    e.g. Bloom Filter
+    Return the current time stamp.
     """
-
-    def __init__(self):
-        self._already_visited = dict()
-
-    def add(self, url):
-        if url not in self._already_visited:
-            self._already_visited[url] = 1
-        else:
-            self._already_visited[url] += 1
-
-    def already_visited(self, url):
-        return url in self._already_visited
+    return int(time.time())
